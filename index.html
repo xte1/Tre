@@ -3,49 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم تيك توك - @eyesiq</title>
+    <title>تحديث رابط تيك توك</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #121212; color: #fff; padding: 20px; text-align: center; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #2c2c2c; color: #fff; }
-        button { background: #ff3b5c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 95%; }
-        button:hover { background: #e0324f; }
-        #status { margin-top: 15px; color: #4cd137; font-weight: bold; }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: Tahoma, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 320px;
+            text-align: center;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            text-align: left;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #b32d3d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #d93848;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>تحكم بوت تيك توك</h2>
-        <p>الحساب المستهدف: <b>@eyesiq</b></p>
-        
-        <input type="text" id="videoLink" placeholder="أدخل رابط الفيديو أو اليوزر هنا...">
-        <br>
-        <button onclick="saveLink()">توليد وحفظ ملف الرابط</button>
-        
-        <div id="status"></div>
-    </div>
+<div class="card">
+    <h3>تحديث الرابط المستهدف</h3>
+    
+    <input type="password" id="githubToken" placeholder="GitHub Personal Access Token">
+    <input type="text" id="targetLink" placeholder="الصق رابط الفيديو أو الصورة هنا">
+    
+    <button onclick="updateFile()">تحديث في المستودع فوراً</button>
+    <div id="status"></div>
+</div>
 
-    <script>
-        function saveLink() {
-            const link = document.getElementById('videoLink').value;
-            if(!link) {
-                alert('الرجاء إدخال الرابط أولاً!');
-                return;
-            }
-            
-            const blob = new Blob([link], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'link.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            document.getElementById('status').innerText = 'تم تحميل ملف link.txt بنجاح! ضعه في مجلد السكريبت.';
+<script>
+async function updateFile() {
+    const token = document.getElementById('githubToken').value.trim();
+    const content = document.getElementById('targetLink').value.trim();
+    const statusDiv = document.getElementById('status');
+
+    if (!token || !content) {
+        statusDiv.style.color = '#ff6b6b';
+        statusDiv.innerText = 'الرجاء إدخال الرمز والرابط!';
+        return;
+    }
+
+    statusDiv.style.color = '#f1c40f';
+    statusDiv.innerText = 'جاري التحديث...';
+
+    // معلومات المستودع الخاص بك
+    const owner = 'xte1'; 
+    const repo = 'Tre';
+    const path = 'link.txt';
+
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+    try {
+        // 1. جلب الـ SHA القديم للملف
+        const getRes = await fetch(url, {
+            headers: { 'Authorization': `token ${token}` }
+        });
+        
+        let sha = '';
+        if (getRes.ok) {
+            const data = await getRes.json();
+            sha = data.sha;
         }
-    </script>
+
+        // 2. تحديث الملف بالمحتوى الجديد مباشرة
+        const putRes = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: 'Update target link via web interface',
+                content: btoa(unescape(encodeURIComponent(content))),
+                sha: sha || undefined
+            })
+        });
+
+        if (putRes.ok) {
+            statusDiv.style.color = '#2ecc71';
+            statusDiv.innerText = 'تم تحديث الرابط بنجاح داخل السكريبت!';
+        } else {
+            const errData = await putRes.json();
+            throw new Error(errData.message || 'فشل التحديث');
+        }
+    } catch (error) {
+        statusDiv.style.color = '#ff6b6b';
+        statusDiv.innerText = 'خطأ: ' + error.message;
+    }
+}
+</script>
 
 </body>
 </html>
